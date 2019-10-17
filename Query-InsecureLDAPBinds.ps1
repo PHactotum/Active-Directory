@@ -83,7 +83,7 @@ ForEach ($Event in $Events) {
 	$InsecureLDAPBinds += $Row
 }
 # Dump it all out to a CSV.
-Write-Host $InsecureLDAPBinds.Count "records saved to .\InsecureLDAPBinds.csv for Domain Controller" $ComputerName
+Write-Host $InsecureLDAPBinds.Count "records saved to $OutputPath for Domain Controller" $ComputerName
 $InsecureLDAPBinds | Export-CSV -NoTypeInformation $OutputPath
 # -----------------------------------------------------------------------------
 # End of Main Script
