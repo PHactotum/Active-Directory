@@ -43,13 +43,19 @@ possibility of such damages.
 # Prepare Variables
 Param (
         [parameter(Mandatory=$false,Position=0)][String]$ComputerName = "localhost",
-        [parameter(Mandatory=$false,Position=1)][Int]$Hours = 24)
+        [parameter(Mandatory=$false,Position=1)][Int]$Hours = 24,
+        [parameter(Mandatory=$false,Position=2)][PSCredential]$Credential,
+        [parameter(Mandatory=$false,Position=3)][string]$OutputPath='.\InsecureLDAPBinds.csv')
 
 # Create an Array to hold our returnedvValues
 $InsecureLDAPBinds = @()
 
 # Grab the appropriate event entries
-$Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")}
+If($null -eq $Credential) {
+    $Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")}
+} else {
+    $Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")} -Credential $Credential
+}
 
 # Loop through each event and output the 
 ForEach ($Event in $Events) { 
@@ -78,7 +84,7 @@ ForEach ($Event in $Events) {
 }
 # Dump it all out to a CSV.
 Write-Host $InsecureLDAPBinds.Count "records saved to .\InsecureLDAPBinds.csv for Domain Controller" $ComputerName
-$InsecureLDAPBinds | Export-CSV -NoTypeInformation .\InsecureLDAPBinds.csv
+$InsecureLDAPBinds | Export-CSV -NoTypeInformation $OutputPath
 # -----------------------------------------------------------------------------
 # End of Main Script
 # -----------------------------------------------------------------------------
