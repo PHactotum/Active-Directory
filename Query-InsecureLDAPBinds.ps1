@@ -43,13 +43,19 @@ possibility of such damages.
 # Prepare Variables
 Param (
         [parameter(Mandatory=$false,Position=0)][String]$ComputerName = "localhost",
-        [parameter(Mandatory=$false,Position=1)][Int]$Hours = 24)
+        [parameter(Mandatory=$false,Position=1)][Int]$Hours = 24,
+        [parameter(Mandatory=$false,Position=2)][PSCredential]$Credential,
+        [parameter(Mandatory=$false,Position=3)][string]$OutputPath='.\InsecureLDAPBinds.csv')
 
 # Create an Array to hold our returnedvValues
 $InsecureLDAPBinds = @()
 
 # Grab the appropriate event entries
-$Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")}
+If($null -eq $Credential) {
+    $Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")}
+} else {
+    $Events = Get-WinEvent -ComputerName $ComputerName -FilterHashtable @{Logname='Directory Service';Id=2889; StartTime=(get-date).AddHours("-$Hours")} -Credential $Credential
+}
 
 # Loop through each event and output the 
 ForEach ($Event in $Events) { 
@@ -65,10 +71,17 @@ ForEach ($Event in $Events) {
 		0 {$BindType = "Unsigned"}
 		1 {$BindType = "Simple"}
 		}
-	
+    # Find DNS name if available
+    Try {
+        $DNSName = [System.Net.Dns]::gethostentry($IPAddress).hostname
+    } catch {
+        $DNSName = ""
+    }
+        
 	# Add Them To a Row in our Array
-	$Row = "" | select IPAddress,Port,User,BindType
-	$Row.IPAddress = $IPAddress
+	$Row = "" | Select-Object IPAddress,DNSName,Port,User,BindType
+    $Row.IPAddress = $IPAddress
+    $Row.DNSName = $DNSName
 	$Row.Port = $Port
 	$Row.User = $User
 	$Row.BindType = $BindType
@@ -77,8 +90,8 @@ ForEach ($Event in $Events) {
 	$InsecureLDAPBinds += $Row
 }
 # Dump it all out to a CSV.
-Write-Host $InsecureLDAPBinds.Count "records saved to .\InsecureLDAPBinds.csv for Domain Controller" $ComputerName
-$InsecureLDAPBinds | Export-CSV -NoTypeInformation .\InsecureLDAPBinds.csv
+#Write-Host $InsecureLDAPBinds.Count "records saved to $OutputPath for Domain Controller" $ComputerName
+$InsecureLDAPBinds #| Export-CSV -NoTypeInformation $OutputPath
 # -----------------------------------------------------------------------------
 # End of Main Script
 # -----------------------------------------------------------------------------
