@@ -95,3 +95,14 @@ $InsecureLDAPBinds #| Export-CSV -NoTypeInformation $OutputPath
 # -----------------------------------------------------------------------------
 # End of Main Script
 # -----------------------------------------------------------------------------
+
+<# How I, Perry Harris use this:
+$cred = Get-Credential
+$DCs = get-ADDomainController -Filter *
+Invoke-Command -ComputerName $DCs.HostName -Credential $cred -FilePath Query.InsecureLDAPBinds.ps1 -AsJob
+Get-Job |Wait-Job
+$Results = Get-Job |Receive-Job
+Get-Job | Remove-Job
+$Results |Export-Excel -Path InsecureLogins.XLSX -BoldTopRow -AutoSize -AutoFilter -FreezeTopRow
+#>
+
